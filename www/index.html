@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#2f6b4f">
+<title>Продуктовый бюджет</title>
+<style>
+:root{--bg:#f3f5f0;--card:#fff;--ink:#1c2420;--mute:#6f7a73;--line:#e1e6df;--g:#2f6b4f;--gs:#dcebe2;--hot:#d6452f;--hots:#f8ddd7;--warn:#e0a21b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121714;--card:#1b231e;--ink:#eaf0ec;--mute:#93a198;--line:#2a352e;--g:#5fb88a;--gs:#23382d;--hot:#f0715c;--hots:#42231e;--warn:#e8b84a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121714;--card:#1b231e;--ink:#eaf0ec;--mute:#93a198;--line:#2a352e;--g:#5fb88a;--gs:#23382d;--hot:#f0715c;--hots:#42231e;--warn:#e8b84a;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,"SF Pro Text","Segoe UI",Roboto,sans-serif}
+main{max-width:480px;margin:0 auto;padding:16px}
+.row{display:flex;gap:8px;align-items:center}
+select,input,button{font:inherit;color:inherit}
+select,input{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-width:0}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--g);outline-offset:1px}
+button{border:0;border-radius:10px;padding:9px 14px;background:var(--g);color:#fff;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;color:var(--g);padding:6px 10px;font-size:22px;line-height:1}
+.top{justify-content:space-between;margin-bottom:12px}
+.limit{flex:1}
+.sum{background:var(--card);border-radius:16px;padding:16px;margin-bottom:12px}
+.big{font-size:34px;font-weight:700;letter-spacing:-.02em}
+.big small{font-size:15px;font-weight:500;color:var(--mute);letter-spacing:0}
+.bar{height:10px;border-radius:6px;background:var(--gs);overflow:hidden;margin:10px 0}
+.bar i{display:block;height:100%;background:var(--g);border-radius:6px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.stats div{font-size:13px;color:var(--mute)}
+.stats b{display:block;font-size:16px;color:var(--ink)}
+.cal{background:var(--card);border-radius:16px;padding:10px}
+.mh{justify-content:space-between;padding:2px 4px 8px}
+.mh h2{margin:0;font-size:19px;text-transform:capitalize}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.wd{font-size:12px;color:var(--mute);text-align:center;padding:2px 0}
+.d{aspect-ratio:1/1.25;border-radius:10px;border:0;background:transparent;color:var(--ink);padding:3px 2px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;font-weight:400;gap:1px;overflow:hidden}
+.d .n{font-size:15px;width:24px;height:24px;line-height:24px;border-radius:50%;text-align:center}
+.d.today .n{background:var(--g);color:#fff;font-weight:700}
+.d .a{font-size:11px;font-weight:700;line-height:1.1}
+.d .p{font-size:10px;color:var(--mute);line-height:1}
+.d.has{background:var(--gs)}
+.d.mid{background:color-mix(in srgb,var(--warn) 30%,var(--card))}
+.d.over{background:var(--hots)}
+.d.max{box-shadow:inset 0 0 0 2px var(--hot)}
+.d.sel{box-shadow:inset 0 0 0 2px var(--g)}
+.d.max.sel{box-shadow:inset 0 0 0 2px var(--hot)}
+.legend{font-size:12px;color:var(--mute);padding:8px 4px 0}
+.panel{background:var(--card);border-radius:16px;padding:16px;margin-top:12px}
+.panel h3{margin:0 0 8px;font-size:17px}
+.entry{justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line)}
+.entry button{background:none;color:var(--hot);padding:2px 8px;font-size:20px}
+.mute{color:var(--mute);font-size:14px}
+.add{margin-top:10px}.add input{flex:1}
+.hint{margin-top:14px;font-size:12px;color:var(--mute);text-align:center}
+</style>
+</head>
+<body>
+<main>
+  <div class="row top">
+    <select id="cur" aria-label="Валюта"></select>
+    <div class="row limit">
+      <input id="lim" type="number" inputmode="decimal" min="0" placeholder="Лимит на месяц" aria-label="Лимит на месяц">
+      <button id="setlim">Сохранить</button>
+    </div>
+  </div>
+
+  <section class="sum" id="sum"></section>
+
+  <section class="cal">
+    <div class="row mh">
+      <button class="ghost" id="prev" aria-label="Предыдущий месяц">‹</button>
+      <h2 id="mt"></h2>
+      <button class="ghost" id="next" aria-label="Следующий месяц">›</button>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="legend">В ячейке: сумма за день и доля от лимита. Красная рамка — самый дорогой день.</div>
+  </section>
+
+  <section class="panel" id="panel"></section>
+  <p class="hint">Данные хранятся на этом устройстве.</p>
+</main>
+
+<script>
+(function(){
+var CUR={USD:"$",EUR:"€",PLN:"zł",UAH:"₴",GBP:"£",CZK:"Kč",CHF:"CHF",CAD:"C$",RUB:"₽",TRY:"₺"};
+var S={cur:"PLN",limits:{},days:{}};
+try{var raw=localStorage.getItem("gb1");if(raw)S=JSON.parse(raw)}catch(e){}
+function save(){try{localStorage.setItem("gb1",JSON.stringify(S))}catch(e){}}
+var now=new Date(),vy=now.getFullYear(),vm=now.getMonth(),sel=null;
+function pad(n){return n<10?"0"+n:""+n}
+function mk(y,m){return y+"-"+pad(m+1)}
+function dk(y,m,d){return mk(y,m)+"-"+pad(d)}
+function tot(k){return (S.days[k]||[]).reduce(function(a,b){return a+b},0)}
+function fmt(v){var r=Math.round(v*100)/100;return r.toLocaleString("ru-RU",{maximumFractionDigits:2})}
+function money(v){return fmt(v)+" "+CUR[S.cur]}
+function pc(v){return (Math.round(v*10)/10).toLocaleString("ru-RU")+"%"}
+function limit(){
+  var k=mk(vy,vm);if(S.limits[k]!=null)return S.limits[k];
+  var ks=Object.keys(S.limits).sort().filter(function(x){return x<=k});
+  return ks.length?S.limits[ks[ks.length-1]]:0;
+}
+var $=function(i){return document.getElementById(i)};
+var cs=$("cur");
+Object.keys(CUR).forEach(function(c){var o=document.createElement("option");o.value=c;o.textContent=c+" "+CUR[c];cs.appendChild(o)});
+cs.value=S.cur;
+cs.onchange=function(){S.cur=cs.value;save();render()};
+$("setlim").onclick=function(){
+  var v=parseFloat($("lim").value.replace(",","."));
+  if(isNaN(v)||v<0)return;
+  S.limits[mk(vy,vm)]=v;save();render();
+};
+$("prev").onclick=function(){vm--;if(vm<0){vm=11;vy--}sel=null;render()};
+$("next").onclick=function(){vm++;if(vm>11){vm=0;vy++}sel=null;render()};
+
+function render(){
+  var L=limit(),dim=new Date(vy,vm+1,0).getDate(),spent=0,maxD=0,maxV=0,cnt=0;
+  for(var d=1;d<=dim;d++){var t=tot(dk(vy,vm,d));spent+=t;if(t>0)cnt++;if(t>maxV){maxV=t;maxD=d}}
+  $("lim").value=L||"";
+  var left=L-spent,used=L>0?spent/L*100:0;
+  var isCur=vy===now.getFullYear()&&vm===now.getMonth();
+  var daysLeft=isCur?dim-now.getDate()+1:(new Date(vy,vm,1)>now?dim:0);
+  var h='<div class="big">'+money(spent)+' <small>из '+(L?money(L):"— лимит не задан")+'</small></div>';
+  if(L){
+    h+='<div class="bar"><i style="width:'+Math.min(100,used)+'%;'+(used>100?"background:var(--hot)":used>80?"background:var(--warn)":"")+'"></i></div>';
+    h+='<div>'+(left>=0?'Осталось <b>'+money(left)+'</b> ('+pc(100-used)+')':'Превышение <b style="color:var(--hot)">'+money(-left)+'</b> ('+pc(used-100)+')')+'</div>';
+  }
+  h+='<div class="stats">'
+   +'<div>Самый дорогой день<b>'+(maxV?maxD+"-е · "+money(maxV):"—")+'</b></div>'
+   +'<div>Средний день с тратами<b>'+(cnt?money(spent/cnt):"—")+'</b></div>'
+   +(L&&daysLeft>0&&left>0?'<div>Можно в день до конца месяца<b>'+money(left/daysLeft)+'</b></div>':'')
+   +'</div>';
+  $("sum").innerHTML=h;
+
+  var mn=new Date(vy,vm,1).toLocaleDateString("ru-RU",{month:"long",year:"numeric"});
+  $("mt").textContent=mn;
+  var g="";["Пн","Вт","Ср","Чт","Пт","Сб","Вс"].forEach(function(w){g+='<div class="wd">'+w+'</div>'});
+  var off=(new Date(vy,vm,1).getDay()+6)%7;
+  for(var i=0;i<off;i++)g+="<div></div>";
+  for(d=1;d<=dim;d++){
+    var t2=tot(dk(vy,vm,d)),share=L>0?t2/L*100:0,cl="d";
+    if(t2>0){cl+=" has";if(share>=5)cl+=" mid";if(share>=10)cl+=" over"}
+    if(d===maxD&&maxV>0)cl+=" max";
+    if(isCur&&d===now.getDate())cl+=" today";
+    if(d===sel)cl+=" sel";
+    g+='<button class="'+cl+'" data-d="'+d+'"><span class="n">'+d+'</span>'
+      +(t2>0?'<span class="a">'+fmt(t2)+'</span>'+(L?'<span class="p">'+pc(share)+'</span>':''):'')+'</button>';
+  }
+  $("grid").innerHTML=g;
+  Array.prototype.forEach.call($("grid").querySelectorAll("button"),function(b){
+    b.onclick=function(){sel=+b.getAttribute("data-d");render();$("panel").scrollIntoView({behavior:"smooth",block:"nearest"})};
+  });
+  panel(L);
+}
+
+function panel(L){
+  var p=$("panel");
+  if(!sel){p.innerHTML='<div class="mute">Нажмите на день в календаре, чтобы добавить траты.</div>';return}
+  var k=dk(vy,vm,sel),arr=S.days[k]||[],t=tot(k);
+  var dt=new Date(vy,vm,sel).toLocaleDateString("ru-RU",{day:"numeric",month:"long",weekday:"long"});
+  var h='<h3>'+dt+'</h3>';
+  if(!arr.length)h+='<div class="mute">Трат пока нет.</div>';
+  arr.forEach(function(v,i){h+='<div class="row entry"><span>'+money(v)+'</span><button data-i="'+i+'" aria-label="Удалить">×</button></div>'});
+  h+='<div class="row entry" style="border:0"><b>Итого за день</b><b>'+money(t)+'</b></div>';
+  if(L>0)h+='<div class="mute">Это '+pc(t/L*100)+' месячного лимита.</div>';
+  h+='<div class="row add"><input id="amt" type="number" inputmode="decimal" min="0" placeholder="Сумма, '+CUR[S.cur]+'"><button id="addb">Добавить</button></div>';
+  p.innerHTML=h;
+  Array.prototype.forEach.call(p.querySelectorAll(".entry button"),function(b){
+    b.onclick=function(){arr.splice(+b.getAttribute("data-i"),1);if(!arr.length)delete S.days[k];save();render()};
+  });
+  function add(){
+    var v=parseFloat($("amt").value.replace(",","."));
+    if(isNaN(v)||v<=0)return;
+    (S.days[k]=S.days[k]||[]).push(v);save();render();var a=$("amt");if(a)a.focus();
+  }
+  $("addb").onclick=add;
+  $("amt").onkeydown=function(e){if(e.key==="Enter")add()};
+}
+sel=now.getDate();
+render();
+})();
+</script>
+</body>
+</html>

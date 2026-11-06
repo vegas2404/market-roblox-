@@ -1,5 +1,6 @@
 {
   "appId": "com.vegas.foodcount",
   "appName": "FoodCount",
-  "webDir": "www"
+  "webDir": "www",
+  "backgroundColor": "#0b0b0b"
 }
